@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
-
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
 )
 
 func main() {
+
 	bot, err := tgbotapi.NewBotAPI("2044118489:AAFf-i_MyU4vz14oovc8MEkyPd-5qelnJSY")
 	if err != nil {
 		log.Panic(err)
