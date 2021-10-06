@@ -10,13 +10,13 @@ import (
 var dbase *gorm.DB
 
 type Users struct {
-	Id         uint
+	Id         uint `gorm:"primaryKey"`
 	UserName   string
 	TelegramId uint
 }
 
 type AdministratorsGroup struct {
-	IdUsers uint
+	Id uint `gorm:"primaryKey"`
 }
 
 func Init() *gorm.DB {
@@ -25,8 +25,25 @@ func Init() *gorm.DB {
 		log.Fatal(err)
 	}
 	db.AutoMigrate(&Users{}, &AdministratorsGroup{})
-
+	initAdmin(db, initOneUser(db))
 	return db
+}
+
+func initAdmin(db *gorm.DB, id uint) {
+	adminUser := AdministratorsGroup{Id: id}
+	result := db.Create(&adminUser)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+}
+
+func initOneUser(db *gorm.DB) uint {
+	user := Users{UserName: "MrS1_2", TelegramId: 519588080}
+	result := db.Create(&user)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+	return user.Id
 }
 
 func GetDB() *gorm.DB {
@@ -40,5 +57,15 @@ func GetDB() *gorm.DB {
 			dbase = Init()
 		}
 	}
+
 	return dbase
+}
+
+func GetUserList(db *gorm.DB) []Users {
+	var user []Users
+	result := db.Find(&user)
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+	return user
 }
