@@ -61,9 +61,9 @@ func GetDB() *gorm.DB {
 	return dbase
 }
 
-func GetUserList(db *gorm.DB) []Users {
+func GetUserList() []Users {
 	var user []Users
-	result := db.Find(&user)
+	result := dbase.Find(&user)
 	if result.Error != nil {
 		log.Fatal(result.Error)
 	}
