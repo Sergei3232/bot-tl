@@ -9,6 +9,8 @@ import (
 
 func main() {
 	database.Init()
+	//database.GetUserList
+	//db := database.GetDB()
 	bot, err := tgbotapi.NewBotAPI("2044118489:AAFf-i_MyU4vz14oovc8MEkyPd-5qelnJSY")
 	if err != nil {
 		log.Panic(err)
@@ -28,7 +30,8 @@ func main() {
 			continue
 		}
 		if update.Message.Text == "/list" {
-			//database.
+
+			//database.GetUserList()
 			//listUser := database.GetUserList()
 			//log.Println(listUser)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Тут будет список данных")
