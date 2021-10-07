@@ -39,9 +39,12 @@ func main() {
 		switch update.Message.Command() {
 		case "start":
 			textMessageUser = "Приветствую вас на нашем канале!!!"
+			AddNewUserBot(database.GetDB(), update.Message.Chat.ID, update.Message.Chat.UserName)
 		case "list":
-			GetUserTelegramID(database.GetDB())
-			textMessageUser = "Тут будет список"
+			listUser := GetUserTelegramID(database.GetDB())
+			log.Printf("Список %d", listUser)
+			//textMessageUser = "Тут будет список"
+			textMessageUser = update.Message.CommandArguments()
 		default:
 			textMessageUser = "Команда не известна!!! Попробуйте задать другую команду!!!"
 
@@ -65,4 +68,17 @@ func GetUserTelegramID(db *gorm.DB) []uint {
 		userId = append(userId, n.TelegramId)
 	}
 	return userId
+}
+
+func AddNewUserBot(db *gorm.DB, id int64, nameUser string) {
+	user := Users{}
+	db.Where("Telegram_id = ?", id).First(&user)
+
+	if user.Id == 0 {
+		user = Users{UserName: nameUser, TelegramId: uint(id)}
+		result := db.Create(&user)
+		if result.Error != nil {
+			log.Fatal(result.Error)
+		}
+	}
 }
