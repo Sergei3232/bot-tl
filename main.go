@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Sergei3232/bot-tl/database"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	"log"
 )
@@ -39,7 +40,7 @@ func main() {
 		case "start":
 			textMessageUser = "Приветствую вас на нашем канале!!!"
 		case "list":
-
+			GetUserTelegramID(database.GetDB())
 			textMessageUser = "Тут будет список"
 		default:
 			textMessageUser = "Команда не известна!!! Попробуйте задать другую команду!!!"
@@ -50,4 +51,18 @@ func main() {
 		bot.Send(msg)
 
 	}
+}
+
+func GetUserTelegramID(db *gorm.DB) []uint {
+	users := []Users{}
+	result := db.Find(&users)
+
+	if result.Error != nil {
+		log.Fatal(result.Error)
+	}
+	userId := make([]uint, len(users))
+	for _, n := range users {
+		userId = append(userId, n.TelegramId)
+	}
+	return userId
 }
