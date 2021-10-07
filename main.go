@@ -7,10 +7,15 @@ import (
 	"log"
 )
 
+type Users struct {
+	Id         uint `gorm:"primaryKey"`
+	UserName   string
+	TelegramId uint
+}
+
 func main() {
 	database.Init()
-	//database.GetUserList
-	//db := database.GetDB()
+
 	bot, err := tgbotapi.NewBotAPI("2044118489:AAFf-i_MyU4vz14oovc8MEkyPd-5qelnJSY")
 	if err != nil {
 		log.Panic(err)
@@ -29,19 +34,20 @@ func main() {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-		if update.Message.Text == "/list" {
+		var textMessageUser string
+		switch update.Message.Command() {
+		case "start":
+			textMessageUser = "Приветствую вас на нашем канале!!!"
+		case "list":
 
-			//database.GetUserList()
-			//listUser := database.GetUserList()
-			//log.Println(listUser)
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Тут будет список данных")
-			msg.ReplyToMessageID = update.Message.MessageID
-			bot.Send(msg)
+			textMessageUser = "Тут будет список"
+		default:
+			textMessageUser = "Команда не известна!!! Попробуйте задать другую команду!!!"
+
 		}
-		//log.Printf("Сообщение из логов: [%s] %s", update.Message.From.UserName, update.Message.Text)
-		//log.Printf("Команда %s", update.Message.Text)
-		//msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		//msg.ReplyToMessageID = update.Message.MessageID
+		msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
+
+		bot.Send(msg)
 
 	}
 }

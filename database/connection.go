@@ -30,20 +30,31 @@ func Init() *gorm.DB {
 }
 
 func initAdmin(db *gorm.DB, id uint) {
-	adminUser := AdministratorsGroup{Id: id}
-	result := db.Create(&adminUser)
-	if result.Error != nil {
-		log.Fatal(result.Error)
+	adminUser := AdministratorsGroup{}
+	db.Where("id = ?", id).First(&adminUser)
+
+	if adminUser.Id == 0 {
+		adminUser = AdministratorsGroup{Id: id}
+		result := db.Create(&adminUser)
+		if result.Error != nil {
+			log.Fatal(result.Error)
+		}
 	}
+
 }
 
 func initOneUser(db *gorm.DB) uint {
-	user := Users{UserName: "MrS1_2", TelegramId: 519588080}
-	result := db.Create(&user)
-	if result.Error != nil {
-		log.Fatal(result.Error)
+	user := Users{}
+	db.Where("Telegram_id = ?", 519588080).First(&user)
+
+	if user.Id == 0 {
+		user = Users{UserName: "MrS1_2", TelegramId: 519588080}
+		result := db.Create(&user)
+		if result.Error != nil {
+			log.Fatal(result.Error)
+		}
 	}
-	return user.Id
+	return user.TelegramId
 }
 
 func GetDB() *gorm.DB {
