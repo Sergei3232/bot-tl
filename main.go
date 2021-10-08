@@ -39,24 +39,36 @@ func main() {
 		switch update.Message.Command() {
 		case "start":
 			textMessageUser = "Приветствую вас на нашем канале!!!"
-			AddNewUserBot(database.GetDB(), update.Message.Chat.ID, update.Message.Chat.UserName)
-		case "list":
-			listUser := GetUserTelegramID(database.GetDB())
-			log.Printf("Список %d", listUser)
-			//textMessageUser = "Тут будет список"
-			textMessageUser = update.Message.CommandArguments()
+			addNewUserBot(database.GetDB(), update.Message.Chat.ID, update.Message.Chat.UserName)
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
+			bot.Send(msg)
+		case "send":
+			listUser := getUserTelegramID(database.GetDB())
+
+			for _, id := range listUser {
+				msg := tgbotapi.NewMessage(int64(id), update.Message.CommandArguments())
+				bot.Send(msg)
+			}
+		case "help":
+
+			thisAdmin := isAnAdmin(database.GetDB(), update.Message.Chat.ID)
+			if thisAdmin {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, adminMenu())
+				bot.Send(msg)
+			}
+
 		default:
 			textMessageUser = "Команда не известна!!! Попробуйте задать другую команду!!!"
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
 
+			bot.Send(msg)
 		}
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
-
-		bot.Send(msg)
 
 	}
 }
 
-func GetUserTelegramID(db *gorm.DB) []uint {
+//Returns a list of user ID that interacted with the bot
+func getUserTelegramID(db *gorm.DB) []uint {
 	users := []Users{}
 	result := db.Find(&users)
 
@@ -70,7 +82,8 @@ func GetUserTelegramID(db *gorm.DB) []uint {
 	return userId
 }
 
-func AddNewUserBot(db *gorm.DB, id int64, nameUser string) {
+//Adds a unique bot user to the database
+func addNewUserBot(db *gorm.DB, id int64, nameUser string) {
 	user := Users{}
 	db.Where("Telegram_id = ?", id).First(&user)
 
@@ -81,4 +94,30 @@ func AddNewUserBot(db *gorm.DB, id int64, nameUser string) {
 			log.Fatal(result.Error)
 		}
 	}
+}
+
+//Checking the user for administrator rights
+func isAnAdmin(db *gorm.DB, id int64) bool {
+	var isAdmin bool
+	adminUser := database.AdministratorsGroup{}
+	db.Where("id = ?", id).First(&adminUser)
+
+	if adminUser.Id != 0 {
+		isAdmin = true
+	}
+	return isAdmin
+}
+
+//The text of the help on commands for the administrator
+func adminMenu() (menuAdmin string) {
+	menuAdmin = `Доступные команды Администратора:
+	/messageUsers [Сообщение пользователю]
+	Отправка сообщения всем пользователям бота
+	/addAdmin [Телеграм id]
+	Добавление пользователя в группу администрирования
+	/deleteAdmin [Телеграм id]
+	Удаляет пользователя из группу администрирования
+	/ipUserHistory [Телеграм id]
+	Показывает все ip из за просов пользователя`
+	return
 }
