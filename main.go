@@ -41,13 +41,20 @@ func main() {
 			textMessageUser = "Приветствую вас на нашем канале!!!"
 			addNewUserBot(database.GetDB(), update.Message.Chat.ID, update.Message.Chat.UserName)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
-			bot.Send(msg)
-		case "send":
+			_, _ = bot.Send(msg)
+		case "messageUsers":
 			listUser := getUserTelegramID(database.GetDB())
 
 			for _, id := range listUser {
 				msg := tgbotapi.NewMessage(int64(id), update.Message.CommandArguments())
 				bot.Send(msg)
+			}
+		case "addAdmin":
+			err := addAdmin(database.GetDB(), update.Message.Chat.ID)
+			if err != nil {
+				textMessageUser = "Ошибка добавления пользователя в группу Администрирования!"
+			} else {
+				textMessageUser = "Пользователь добавлен в группу!"
 			}
 		case "help":
 
@@ -60,7 +67,6 @@ func main() {
 		default:
 			textMessageUser = "Команда не известна!!! Попробуйте задать другую команду!!!"
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
-
 			bot.Send(msg)
 		}
 
@@ -119,5 +125,23 @@ func adminMenu() (menuAdmin string) {
 	Удаляет пользователя из группу администрирования
 	/ipUserHistory [Телеграм id]
 	Показывает все ip из за просов пользователя`
+	return
+}
+
+//Adding a user s to the admin group
+func addAdmin(db *gorm.DB, id int64) (err error) {
+	adminUser := database.AdministratorsGroup{}
+	db.Where("id = ?", id).First(&adminUser)
+
+	if adminUser.Id == 0 {
+		adminUser = database.AdministratorsGroup{Id: uint(id)}
+		result := db.Create(&adminUser)
+		if result.Error != nil {
+			log.Fatal(result.Error)
+			err = nil
+		} else {
+			err = result.Error
+		}
+	}
 	return
 }
