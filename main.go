@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	"log"
+	"strconv"
 )
 
 type Users struct {
@@ -36,33 +37,54 @@ func main() {
 			continue
 		}
 		var textMessageUser string
-		switch update.Message.Command() {
-		case "start":
-			textMessageUser = "Приветствую вас на нашем канале!!!"
+		userAdmin := isAnAdmin(database.GetDB(), update.Message.Chat.ID)
+
+		commandMessage := update.Message.Command()
+		switch {
+		case commandMessage == "start":
+			textMessageUser = `Приветствую вас на нашем канале!!!
+Для получения справки по командам введите /help`
+
 			addNewUserBot(database.GetDB(), update.Message.Chat.ID, update.Message.Chat.UserName)
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, textMessageUser)
-			_, _ = bot.Send(msg)
-		case "messageUsers":
+			bot.Send(msg)
+		case userAdmin && "messageUsers" == commandMessage:
 			listUser := getUserTelegramID(database.GetDB())
-
 			for _, id := range listUser {
 				msg := tgbotapi.NewMessage(int64(id), update.Message.CommandArguments())
 				bot.Send(msg)
 			}
-		case "addAdmin":
-			err := addAdmin(database.GetDB(), update.Message.Chat.ID)
+		case userAdmin && "addAdmin" == commandMessage:
+			id, err := stringToUint(update.Message.CommandArguments())
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = addAdmin(database.GetDB(), id)
 			if err != nil {
 				textMessageUser = "Ошибка добавления пользователя в группу Администрирования!"
 			} else {
 				textMessageUser = "Пользователь добавлен в группу!"
 			}
-		case "help":
-
-			thisAdmin := isAnAdmin(database.GetDB(), update.Message.Chat.ID)
+		case userAdmin && "deleteAdmin" == commandMessage:
+			id, err := stringToUint(update.Message.CommandArguments())
+			if err != nil {
+				log.Fatal(err)
+			}
+			deleteAdminUser(database.GetDB(), id)
+			thisAdmin := isAnAdmin(database.GetDB(), int64(id))
 			if thisAdmin {
+				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Операция выполнена!")
+				bot.Send(msg)
+			}
+
+		case "help" == commandMessage:
+			if userAdmin {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, adminMenu())
 				bot.Send(msg)
 			}
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, userMenu())
+			bot.Send(msg)
 
 		default:
 			textMessageUser = "Команда не известна!!! Попробуйте задать другую команду!!!"
@@ -123,13 +145,20 @@ func adminMenu() (menuAdmin string) {
 	Добавление пользователя в группу администрирования
 	/deleteAdmin [Телеграм id]
 	Удаляет пользователя из группу администрирования
-	/ipUserHistory [Телеграм id]
+	/ipUserHistory [Телеграм id] (в разработке)
 	Показывает все ip из за просов пользователя`
 	return
 }
 
+func userMenu() (menuUser string) {
+	menuUser = `Доступные команды Пользователя:
+	/ip [URL для проверки]
+	Отправка url на проверку`
+	return
+}
+
 //Adding a user s to the admin group
-func addAdmin(db *gorm.DB, id int64) (err error) {
+func addAdmin(db *gorm.DB, id uint) (err error) {
 	adminUser := database.AdministratorsGroup{}
 	db.Where("id = ?", id).First(&adminUser)
 
@@ -142,6 +171,21 @@ func addAdmin(db *gorm.DB, id int64) (err error) {
 		} else {
 			err = result.Error
 		}
+	}
+	return
+}
+
+//Removes a user from the administrators group
+func deleteAdminUser(db *gorm.DB, id uint) {
+	admin := database.AdministratorsGroup{}
+	db.Where("Id = ?", id).Delete(&admin)
+}
+
+func stringToUint(stringId string) (id uint, err error) {
+	if n, err := strconv.Atoi(stringId); err == nil {
+		id = uint(n)
+	} else {
+		log.Fatal(err)
 	}
 	return
 }
