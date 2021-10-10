@@ -6,6 +6,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	"log"
+	"strconv"
 )
 
 type Users struct {
@@ -36,6 +37,7 @@ func main() {
 			continue
 		}
 		var textMessageUser string
+
 		switch update.Message.Command() {
 		case "start":
 			textMessageUser = "Приветствую вас на нашем канале!!!"
@@ -50,14 +52,13 @@ func main() {
 				bot.Send(msg)
 			}
 		case "addAdmin":
-			err := addAdmin(database.GetDB(), update.Message.Chat.ID)
+			err := addAdmin(database.GetDB(), update.Message.CommandArguments())
 			if err != nil {
 				textMessageUser = "Ошибка добавления пользователя в группу Администрирования!"
 			} else {
 				textMessageUser = "Пользователь добавлен в группу!"
 			}
 		case "help":
-
 			thisAdmin := isAnAdmin(database.GetDB(), update.Message.Chat.ID)
 			if thisAdmin {
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, adminMenu())
@@ -129,7 +130,14 @@ func adminMenu() (menuAdmin string) {
 }
 
 //Adding a user s to the admin group
-func addAdmin(db *gorm.DB, id int64) (err error) {
+func addAdmin(db *gorm.DB, stringId string) (err error) {
+	var id uint
+	if n, err := strconv.Atoi(stringId); err == nil {
+		id = uint(n)
+	} else {
+		log.Fatal(err)
+	}
+
 	adminUser := database.AdministratorsGroup{}
 	db.Where("id = ?", id).First(&adminUser)
 
