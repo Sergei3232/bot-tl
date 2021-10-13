@@ -14,3 +14,5 @@ require (
 )
 
 replace example.com/database => ../database
+
+replace example.com/pkg/model => ../models
