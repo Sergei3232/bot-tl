@@ -2,18 +2,13 @@ package main
 
 import (
 	"github.com/Sergei3232/bot-tl/database"
+	"github.com/Sergei3232/bot-tl/pkg/model"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	"log"
 	"strconv"
 )
-
-type Users struct {
-	Id         uint `gorm:"primaryKey"`
-	UserName   string
-	TelegramId uint
-}
 
 func main() {
 	database.Init()
@@ -97,7 +92,7 @@ func main() {
 
 //Returns a list of user ID that interacted with the bot
 func getUserTelegramID(db *gorm.DB) []uint {
-	users := []Users{}
+	users := []model.Users{}
 	result := db.Find(&users)
 
 	if result.Error != nil {
@@ -112,11 +107,12 @@ func getUserTelegramID(db *gorm.DB) []uint {
 
 //Adds a unique bot user to the database
 func addNewUserBot(db *gorm.DB, id int64, nameUser string) {
-	user := Users{}
+	user := model.Users{}
 	db.Where("Telegram_id = ?", id).First(&user)
 
 	if user.Id == 0 {
-		user = Users{UserName: nameUser, TelegramId: uint(id)}
+		//user = Users{UserName: nameUser, TelegramId: uint(id)}
+		user.UserName, user.TelegramId = nameUser, uint(id)
 		result := db.Create(&user)
 		if result.Error != nil {
 			log.Fatal(result.Error)
@@ -127,7 +123,7 @@ func addNewUserBot(db *gorm.DB, id int64, nameUser string) {
 //Checking the user for administrator rights
 func isAnAdmin(db *gorm.DB, id int64) bool {
 	var isAdmin bool
-	adminUser := database.AdministratorsGroup{}
+	adminUser := model.AdministratorsGroup{}
 	db.Where("id = ?", id).First(&adminUser)
 
 	if adminUser.Id != 0 {
@@ -159,11 +155,11 @@ func userMenu() (menuUser string) {
 
 //Adding a user s to the admin group
 func addAdmin(db *gorm.DB, id uint) (err error) {
-	adminUser := database.AdministratorsGroup{}
+	adminUser := model.AdministratorsGroup{}
 	db.Where("id = ?", id).First(&adminUser)
 
 	if adminUser.Id == 0 {
-		adminUser = database.AdministratorsGroup{Id: uint(id)}
+		adminUser = model.AdministratorsGroup{Id: uint(id)}
 		result := db.Create(&adminUser)
 		if result.Error != nil {
 			log.Fatal(result.Error)
@@ -177,7 +173,7 @@ func addAdmin(db *gorm.DB, id uint) (err error) {
 
 //Removes a user from the administrators group
 func deleteAdminUser(db *gorm.DB, id uint) {
-	admin := database.AdministratorsGroup{}
+	admin := model.AdministratorsGroup{}
 	db.Where("Id = ?", id).Delete(&admin)
 }
 

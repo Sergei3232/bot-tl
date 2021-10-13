@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"github.com/Sergei3232/bot-tl/pkg/model"
 	"github.com/jinzhu/gorm"
 	"log"
 	"time"
@@ -9,32 +10,24 @@ import (
 
 var dbase *gorm.DB
 
-type Users struct {
-	Id         uint `gorm:"primaryKey"`
-	UserName   string
-	TelegramId uint
-}
-
-type AdministratorsGroup struct {
-	Id uint `gorm:"primaryKey"`
-}
-
 func Init() *gorm.DB {
 	db, err := gorm.Open("postgres", "user=leralarina dbname=bot_tg_db sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
-	db.AutoMigrate(&Users{}, &AdministratorsGroup{})
+
+	db.AutoMigrate(&model.Users{}, &model.AdministratorsGroup{})
 	initAdmin(db, initOneUser(db))
 	return db
 }
 
 func initAdmin(db *gorm.DB, id uint) {
-	adminUser := AdministratorsGroup{}
+	adminUser := model.AdministratorsGroup{}
 	db.Where("id = ?", id).First(&adminUser)
 
 	if adminUser.Id == 0 {
-		adminUser = AdministratorsGroup{Id: id}
+		//adminUser = model.AdministratorsGroup{Id: id}
+		adminUser.Id = id
 		result := db.Create(&adminUser)
 		if result.Error != nil {
 			log.Fatal(result.Error)
@@ -44,11 +37,12 @@ func initAdmin(db *gorm.DB, id uint) {
 }
 
 func initOneUser(db *gorm.DB) uint {
-	user := Users{}
+	user := model.Users{}
 	db.Where("Telegram_id = ?", 519588080).First(&user)
 
 	if user.Id == 0 {
-		user = Users{UserName: "MrS1_2", TelegramId: 519588080}
+		//user = model.Users{UserName: "MrS1_2", TelegramId: 519588080}
+		user.UserName, user.TelegramId = "MrS1_2", 519588080
 		result := db.Create(&user)
 		if result.Error != nil {
 			log.Fatal(result.Error)
